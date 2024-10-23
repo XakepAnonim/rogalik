@@ -17,11 +17,17 @@ sio = socketio.Client()
 
 @sio.event
 def connect():
+    """
+    Соединение с сервером.
+    """
     print("Connected to server")
 
 
 @sio.event
 def disconnect():
+    """
+    Отключение от сервера.
+    """
     print("Disconnected from server")
 
 
@@ -34,6 +40,9 @@ def update_game_state(data):
 
 
 def main():
+    """
+    Главная функция.
+    """
     # Подключаемся к серверу
     sio.connect("http://127.0.0.1:8000", transports=["websocket"])
 

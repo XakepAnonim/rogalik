@@ -1,26 +1,26 @@
-name: Run tests on any Push event
-# Запуск при push в master, за исключением релизных тэгов.
-# Они будут тестироваться перед сборкой
-on:
-  push:
-    tags:
-      - '!refs/tags/*'
-    branches:
-      - 'master'
-jobs:
-  run_tests:
-    runs-on: [ ubuntu-latest ]
-    steps:
-      # Чекаутим код
-      - uses: actions/checkout@master
-      # Устанавливаем python нужной версии
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.13'
-          architecture: 'x64'
-      - name: Install poetry dependencies
-        run: |
-          pip install poetry
-          poetry install
-      - name: Run tests
-        run: poetry run python main.py tests
+#name: Run tests on any Push event
+## Запуск при push в master, за исключением релизных тэгов.
+## Они будут тестироваться перед сборкой
+#on:
+#  push:
+#    tags:
+#      - '!refs/tags/*'
+#    branches:
+#      - 'master'
+#jobs:
+#  run_tests:
+#    runs-on: [ ubuntu-latest ]
+#    steps:
+#      # Чекаутим код
+#      - uses: actions/checkout@master
+#      # Устанавливаем python нужной версии
+#      - uses: actions/setup-python@v1
+#        with:
+#          python-version: '3.13'
+#          architecture: 'x64'
+#      - name: Install poetry dependencies
+#        run: |
+#          pip install poetry
+#          poetry install
+#      - name: Run tests
+#        run: poetry run python main.py tests

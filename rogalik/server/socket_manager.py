@@ -12,6 +12,9 @@ game_state = {"players": {}}
 
 @sio.event
 async def connect(sid, environ):
+    """
+    Обработчик подключения игрока.
+    """
     print(f"connect {sid}")
     game_state["players"][sid] = {"x": 0, "y": 0}  # Добавляем игрока
 
@@ -21,6 +24,9 @@ async def connect(sid, environ):
 
 @sio.event
 async def disconnect(sid):
+    """
+    Обработчик отключения игрока.
+    """
     print(f"disconnect {sid}")
     game_state["players"].pop(sid, None)  # Удаляем игрока
 
