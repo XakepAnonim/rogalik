@@ -1,23 +1,90 @@
+import logging
 import uuid
 from datetime import datetime
+from enum import Enum as PyEnum
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, Table, create_engine
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Table, create_engine
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
 from rogalik.settings import DB_URL
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 engine = create_engine(DB_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-character_abilities = Table(
-    "character_abilities",
+character_skills = Table(
+    "character_skills",
     Base.metadata,
     Column("character_id", UUID(as_uuid=True), ForeignKey("characters.id")),
-    Column("ability_id", UUID(as_uuid=True), ForeignKey("abilities.id")),
+    Column("skill_id", UUID(as_uuid=True), ForeignKey("skills.id")),
 )
+
+class_roles = Table(
+    "class_roles",
+    Base.metadata,
+    Column("class_id", UUID(as_uuid=True), ForeignKey("classes.id")),
+    Column("role_id", UUID(as_uuid=True), ForeignKey("roles.id")),
+)
+
+
+class EventType(PyEnum):
+    SKILL_USE = "skill_use"
+    ITEM_USE = "item_use"
+    OTHER = "other"
+
+
+class EventLog(Base):
+    """
+    Модель логов событий
+
+    Attributes:
+    id: UUID
+    character_id: UUID идентификатор персонажа
+    event_type: тип события
+    details: дополнительные данные о событии (навык, изменение характеристик и т.д.)
+    timestamp: время события
+
+    """
+
+    __tablename__ = "event_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    character_id = Column(UUID(as_uuid=True), ForeignKey("characters.id"))
+    event_type = Column(String, nullable=False)
+    details = Column(JSON, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    character = relationship("Character", back_populates="logs")
+
+    def __repr__(self):
+        """
+        Возвращает строковое представление объекта.
+        """
+        return (
+            f"<EventLog(id={self.id}, character_id={self.character_id}, "
+            f"event_type={self.event_type}, timestamp={self.timestamp})>"
+        )
+
+
+def log_event(character, event_type, details):
+    """
+    Добавляет событие в лог.
+    """
+    event = EventLog(character_id=character.id, event_type=event_type, details=details)
+    session = SessionLocal()
+    try:
+        session.add(event)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Ошибка при логировании события: {e}")
+    finally:
+        session.close()
 
 
 class Player(Base):
@@ -47,6 +114,97 @@ class Player(Base):
         return f"<Player(id={self.id}, username={self.username}, created_at={self.created_at}, updated_at={self.updated_at})>"
 
 
+class Skill(Base):
+    """
+    Модель навыков
+
+    Attributes:
+    id: UUID
+    class_id: UUID идентификатор класса, к которому привязан навык
+    synergy_with_class: синергия с другим классом
+    name: название навыка
+    description: описание навыка
+    effect: эффект навыка, например, {"damage": 50, "heal": 0, "buff": "strength"}
+    cooldown: перезарядка навыка в секундах
+    required_level: уровень, необходимый для изучения навыка
+    characters: связь с персонажами, которые имеют навык
+
+    """
+
+    __tablename__ = "skills"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    class_id = Column(UUID(as_uuid=True), ForeignKey("classes.id"))
+    synergy_with_class = Column(UUID(as_uuid=True), ForeignKey("classes.id"), nullable=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    effect = Column(JSON, nullable=False)
+    cooldown = Column(Integer, default=0)
+    required_level = Column(Integer, default=1)
+
+    characters = relationship("Character", secondary=character_skills, back_populates="skills")
+
+    def apply_synergy(self, target_character):
+        """
+        Применение синергии навыков между классами.
+        Например, маг может усилить атаку воина.
+        """
+        log_event(target_character, "synergy_applied", {"synergy_with": str(self.synergy_with_class)})
+        if self.synergy_with_class and target_character.class_id == self.synergy_with_class:
+            # Пример: увеличиваем атаку цели, если она соответствует классу синергии
+            target_character.base_stats["attack"] += 5
+
+    def __repr__(self):
+        """
+        Возвращает строковое представление объекта.
+        """
+        return (
+            f"<Skill(id={self.id}, name={self.name}, description={self.description}, effect={self.effect}, "
+            f"cooldown={self.cooldown}, required_level={self.required_level})>"
+        )
+
+
+class Item(Base):
+    """
+    Модель предметов
+
+    Attributes:
+    id: UUID
+    name: название предмета
+    description: описание предмета
+    class_id: UUID идентификатор класса, к которому привязан предмет
+    bonuses: бонусы предмета (например, +10 к защите)
+
+    """
+
+    __tablename__ = "items"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    class_id = Column(UUID(as_uuid=True), ForeignKey("classes.id"))
+    bonuses = Column(JSON, nullable=False)
+
+    characters = relationship("Character", back_populates="items")
+
+    def apply_bonuses(self, character):
+        """
+        Применяет бонусы предмета к персонажу.
+        """
+        for stat, value in self.bonuses.items():
+            character.base_stats[stat] += value
+        log_event(character, "item_bonus_applied", {"item_id": str(self.id), "bonuses": self.bonuses})
+
+    def __repr__(self):
+        """
+        Возвращает строковое представление объекта.
+        """
+        return (
+            f"<Item(id={self.id}, name={self.name}, description={self.description}, "
+            f"class_id={self.class_id}, bonuses={self.bonuses})>"
+        )
+
+
 class Character(Base):
     """
     Модель персонажа
@@ -58,11 +216,14 @@ class Character(Base):
     level: уровень персонажа
     experience: опыт персонажа
     player_id: UUID идентификатор игрока
-    player: связь с игроком
     class_id: UUID идентификатор класса
-    class_: связь с классом
-    abilities: связь с умениями персонажа
     base_stats: базовые характеристики персонажа, например, {"hp": 100, "attack": 50}
+    skill_points: очки навыков персонажа
+
+    player: связь с игроком
+    class_: связь с классом
+    skills: связь с навыками персонажа
+    events: связь с логами событий персонажа
 
     """
 
@@ -74,20 +235,24 @@ class Character(Base):
     level = Column(Integer, default=1)
     experience = Column(Integer, default=0)
     base_stats = Column(JSON, nullable=False)
+    skill_points = Column(Integer, default=0)
 
-    player = relationship("Player", back_populates="characters")
+    player = relationship(Player, back_populates="characters")
     class_ = relationship("Class", back_populates="characters")
-    abilities = relationship("Ability", secondary=character_abilities, back_populates="characters")
+    skills = relationship(Skill, secondary=character_skills, back_populates="characters")
+    events = relationship(EventLog, backref="character")
+    items = relationship("Item", back_populates="characters")
+    logs = relationship("EventLog", back_populates="character")
 
-    def available_abilities(self):
+    def available_skills(self):
         """
-        Возвращает список умений, которые можно изучить.
+        Возвращает список умений, которые можно изучить, основываясь на уровне персонажа.
         """
-        return [ability for ability in self.abilities if self.level >= ability.required_level]
+        return [skill for skill in self.skills if self.level >= skill.required_level]
 
     def add_experience(self, amount: int):
         """
-        Добавляет опыт персонажу.
+        Добавляет опыт персонажу. Если достигнут требуемый опыт, повышает уровень.
         """
         self.experience += amount
         while self.experience >= self.experience_to_level_up():
@@ -95,13 +260,13 @@ class Character(Base):
 
     def experience_to_level_up(self):
         """
-        Возвращает опыт, который нужно для уровня персонажа.
+        Возвращает необходимое количество опыта для повышения уровня.
         """
         return self.level * 100
 
     def level_up(self):
         """
-        Увеличивает уровень персонажа.
+        Увеличивает уровень персонажа, распределяет очки навыков и улучшает характеристики.
         """
         self.level += 1
         self.experience = 0
@@ -109,8 +274,38 @@ class Character(Base):
         for stat, increment in increment_values.items():
             self.base_stats[stat] += increment
 
-        print(f"{self.player.username}'s character leveled up to level {self.level}!")
-        print(f"New base stats: {self.base_stats}")
+        self.apply_class_bonuses()
+        self.skill_points += 1
+
+        print(f"{self.name} достиг уровня {self.level}!")
+        print(f"Новые характеристики: {self.base_stats}")
+
+    def apply_class_bonuses(self):
+        """
+        Применяет бонусы от выбранного класса персонажа, если они существуют.
+        """
+        if self.class_:
+            self.class_.apply_bonuses(self)
+
+    def use_skill(self, skill: Skill, target_character):
+        """
+        Использует навык на целевого персонажа, если навык доступен по уровню.
+        """
+        if self.level >= skill.required_level:
+            logger.info(f"{self.name} использует {skill.name} на {target_character.name}")
+            if skill.synergy_with_class:
+                skill.apply_synergy(target_character)
+            log_event(self, EventType.SKILL_USE.value, f"Использован {skill.name} на {target_character.name}")
+            # TODO: Добавить логику, как именно навык влияет на цель
+        else:
+            print(f"{skill.name} недоступен для {self.name}, нужен уровень {skill.required_level}.")
+
+    def equip_item(self, item: Item):
+        """
+        Экипирует предмет и применяет его бонусы.
+        """
+        self.items.append(item)
+        item.apply_bonuses(self)
 
     def __repr__(self):
         """
@@ -118,7 +313,7 @@ class Character(Base):
         """
         return (
             f"<Character(id={self.id}, level={self.level}, experience={self.experience}, "
-            f"player_id={self.player_id}, class_id={self.class_id})>"
+            f"player_id={self.player_id}, class_id={self.class_id}, items={self.items})>"
         )
 
 
@@ -132,6 +327,7 @@ class Class(Base):
     role: название роли, например, "маг", "танк" и т.д.
     base_stats: базовые характеристики, например, {"hp": 100, "attack": 50}
     bonuses: бонусные характеристики, например, {"critical_chance": 10, "mana_regen": 5}
+    hybrid_class: флаг для гибридных классов (например, Паладин)
     characters: связь с персонажем у которого есть класс
 
     """
@@ -143,8 +339,10 @@ class Class(Base):
     role = Column(String, nullable=False)
     base_stats = Column(JSON, nullable=False)
     bonuses = Column(JSON, nullable=True)
+    hybrid_class = Column(Boolean, default=False)
 
-    characters = relationship("Character", back_populates="class_")
+    characters = relationship(Character, back_populates="class_")
+    roles = relationship("Role", secondary="class_roles", back_populates="classes")
 
     def apply_bonuses(self, character):
         """
@@ -153,6 +351,7 @@ class Class(Base):
         if self.bonuses:
             for stat, value in self.bonuses.items():
                 character.base_stats[stat] += value
+            log_event(character, "class_bonus_applied", {"class_id": str(self.id), "bonuses": self.bonuses})
 
     def create_character(self, player):
         """
@@ -176,36 +375,28 @@ class Class(Base):
         )
 
 
-class Ability(Base):
+class Role(Base):
     """
-    Модель умений
+    Модель ролей персонажа
 
     Attributes:
     id: UUID
-    name: название умения
-    description: описание умения
-    effect: эффект умения, например, {"damage": 50, "heal": 0, "buff": "strength"}
-    cooldown: перезарядка умения в секундах
-    required_level: уровень, необходимый для изучения умения
+    name: название роли
+    description: описание роли
+    classes: связь с классами, которые могут выполнять данную роль
 
     """
 
-    __tablename__ = "abilities"
+    __tablename__ = "roles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
     description = Column(String)
-    effect = Column(JSON, nullable=False)
-    cooldown = Column(Integer, default=0)
-    required_level = Column(Integer, default=1)
 
-    characters = relationship("Character", secondary=character_abilities, back_populates="abilities")
+    classes = relationship(Class, secondary="class_roles", back_populates="roles")
 
     def __repr__(self):
         """
         Возвращает строковое представление объекта.
         """
-        return (
-            f"<Ability(id={self.id}, name={self.name}, description={self.description}, effect={self.effect}, "
-            f"cooldown={self.cooldown}, required_level={self.required_level})>"
-        )
+        return f"<Role(id={self.id}, name={self.name})>"

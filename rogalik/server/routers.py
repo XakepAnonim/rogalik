@@ -1,7 +1,5 @@
 from fastapi import APIRouter
 
-from .models import Item
-
 router = APIRouter()
 
 
@@ -22,7 +20,7 @@ def read_item(item_id: int, q: str | None = None):
 
 
 @router.put("/items/{item_id}")
-def update_item(item_id: int, item: Item):
+def update_item(item_id: int, item):
     """
     put
     """

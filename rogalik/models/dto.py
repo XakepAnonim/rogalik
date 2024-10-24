@@ -4,9 +4,9 @@ from pydantic import BaseModel
 from pydantic.v1 import validator
 
 
-class Ability(BaseModel):
+class Skill(BaseModel):
     """
-    Схема для умений.
+    Схема для навыка.
 
     Attributes:
     name: str
@@ -33,6 +33,22 @@ class Ability(BaseModel):
         return v
 
 
+class Item(BaseModel):
+    """
+    Схема для предметов.
+
+    Attributes:
+    name: str
+    description: str
+    bonuses: Dict[str, int]  # Бонусы предмета
+
+    """
+
+    name: str
+    description: str
+    bonuses: dict[str, int]
+
+
 class BaseStats(BaseModel):
     """
     Схема для базовых характеристик класса и персонажа.
@@ -52,7 +68,7 @@ class Character(BaseModel):
     experience: int
     player_id: UUID
     class_id: UUID
-    abilities: list[Ability]
+    skills: list[Skill]
     base_stats: BaseStats
 
     """
@@ -61,8 +77,9 @@ class Character(BaseModel):
     experience: int
     player_id: uuid.UUID
     class_id: uuid.UUID
-    abilities: list[Ability]
+    skills: list[Skill]
     base_stats: BaseStats
+    items: list[Item] | None = None
 
     @validator("level", "experience")
     def check_positive(cls, v):
@@ -90,3 +107,17 @@ class Class(BaseModel):
     role: str
     base_stats: BaseStats
     bonuses: dict[str, int] | None = None
+
+
+class Role(BaseModel):
+    """
+    Схема для ролей.
+
+    Attributes:
+    name: str
+    description: str
+
+    """
+
+    name: str
+    description: str | None
