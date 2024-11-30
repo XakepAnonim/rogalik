@@ -58,7 +58,7 @@ def client() -> None:
 
 @click.command(help="Run the tests")
 @click.option("--enable-warnings", is_flag=True, help="Enable warnings")
-def tests(enable_warnings: bool):  # noqa: ANN201
+def tests(enable_warnings: bool) -> None:
     """
     Run the tests.
     """
