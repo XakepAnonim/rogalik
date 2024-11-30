@@ -27,6 +27,9 @@ psycopg2-binary = "^2.9.10"
 click = "^8.1.7"
 pygame = "^2.6.1"
 ruff-lsp = "^0.0.59"
+pyjwt = "^2.10.1"
+cryptography = "^44.0.0"
+passlib = "^1.7.4"
 
 
 [build-system]
@@ -73,7 +76,8 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
-    "tests"
+    "tests",
+    "versions",
 ]
 include = ["pyproject.toml", "src/**/*.py", ]
 
@@ -208,6 +212,7 @@ exclude = [
     '.DS_Store',
     '.gitignore',
     'migrations',
+    'versions',
     'db.sqlite3',
     '.log',
     '.jar',
@@ -226,7 +231,6 @@ exclude = [
     ".pyenv",
     ".pytest_cache",
     ".pytype",
-    ".ruff_cache",
     ".svn",
     ".tox",
     "__pypackages__",

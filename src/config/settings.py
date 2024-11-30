@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 BASE_DIR = Path(__file__).parent.parent
 
@@ -15,6 +16,12 @@ class Settings(BaseSettings):
     """
     Класс, содержащий настройки приложения.
     """
+
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
     # Server settings
     host: str = Field(
@@ -44,23 +51,27 @@ class Settings(BaseSettings):
         description="Секретный ключ для шифрования JWT",
         default=secrets.token_urlsafe(32),
     )
+    fernet_key: str = Field(
+        description="Ключ шифрования fernet",
+        default="",
+    )
     algorithm: str = Field(
         description="Алгоритм шифрования JWT",
-        default="HS256",
+        default="RS256",
     )
     expiration_time: int = Field(
         description="Время действия JWT",
-        default=60 * 24 * 8,
+        default=60 * 24 * 8,  # 8 дней
+    )
+    verify_exp: bool = Field(
+        default=True,
+        description="Проверять ли время жизни токена",
     )
 
     # Database settings
     db_host: str = Field(
         description="Хост, на котором запущена база данных",
         default="127.0.0.1",
-    )
-    db_port: int = Field(
-        description="Порт, на котором запущена база данных",
-        default=5432,
     )
     db_name: str = Field(
         description="Название базы данных",
@@ -76,7 +87,7 @@ class Settings(BaseSettings):
     )
     sqlalchemy_url: str = Field(
         description="Строка с параметрами подключения к базе данных",
-        default=f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+        default=f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}",
     )
 
     # Redis settings
