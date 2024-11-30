@@ -7,7 +7,7 @@ from enum import StrEnum
 
 class SocketRole(StrEnum):
     """
-    Модель ролей для веб-сокетов.
+    Модель ролей для сокетов.
     """
 
     PLAYER = "player"
