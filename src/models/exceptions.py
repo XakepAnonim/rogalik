@@ -3,6 +3,7 @@
 которые могут быть использованы для обработки различных ошибок и исключительных ситуаций в приложении.
 """
 
+from fastapi import HTTPException
 from fastapi import status
 from starlette.exceptions import WebSocketException
 
@@ -28,3 +29,24 @@ class SocketIOError(WebSocketException):
     ):
         self.code = code
         self.reason = reason or ""
+
+
+class HTTPError(HTTPException):
+    """
+    Класс пользовательского исключения для ошибок в HTTP запросе.
+    """
+
+
+class HTTPShortError(HTTPError):
+    """
+    Класс HTTP ошибки с кодом 403.
+    """
+
+    def __init__(self, text: str) -> None:
+        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=text)
+
+
+class AuthenticationError(PythonError):
+    """
+    Класс пользовательского исключения для ошибок аутентификации.
+    """
