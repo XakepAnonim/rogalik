@@ -1,0 +1,20 @@
+services:
+  redis:
+    image: redis:alpine
+    container_name: rogalik-redis-data
+    ports:
+      - "6379:6379"
+    env_file:
+      - src/.env
+    command: ["redis-server", "--requirepass", "redis_password"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - rogalik
+
+volumes:
+  redis_data:
+
+networks:
+  rogalik:
+    driver: bridge
