@@ -2,9 +2,10 @@
 Модели эффектов, бафов и дебафов.
 """
 
-from pydantic import Field
+import uuid
 
-from models.base import BaseModel
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class DebuffsBaseModel(BaseModel):
@@ -12,6 +13,10 @@ class DebuffsBaseModel(BaseModel):
     Модель дебафа.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор дебафа",
+        default_factory=uuid.uuid4,
+    )
     name: str = Field(
         description="Название дебафа",
         default="Debuff Name",
@@ -27,6 +32,10 @@ class BuffsBaseModel(BaseModel):
     Модель бафа.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор бафа",
+        default_factory=uuid.uuid4,
+    )
     name: str = Field(
         description="Название бафа",
         default="Buff Name",
@@ -42,6 +51,10 @@ class EffectBaseModel(BaseModel):
     Модель эффекта.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор эффекта",
+        default_factory=uuid.uuid4,
+    )
     name: str = Field(
         description="Название эффекта",
         default="Effect Name",

@@ -4,9 +4,9 @@
 
 import uuid
 
+from pydantic import BaseModel
 from pydantic import Field
 
-from models.base import BaseModel
 from models.mixins import ExtraEffectsMixin
 from models.mixins import TimestampMixin
 
@@ -16,6 +16,10 @@ class ClassConfigurationModel(BaseModel):
     Конфигурационная модель класса.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор класса",
+        default_factory=uuid.uuid4,
+    )
     name: str = Field(
         description="Название класса",
         default="Class name",
@@ -26,7 +30,7 @@ class ClassConfigurationModel(BaseModel):
     )
 
 
-class ClassRepositoryModel(TimestampMixin):
+class ClassRepositoryModel(BaseModel, TimestampMixin):
     """
     Репозиторий класса.
     """

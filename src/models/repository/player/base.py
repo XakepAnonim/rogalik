@@ -4,9 +4,9 @@
 
 import uuid
 
+from pydantic import BaseModel
 from pydantic import Field
 
-from models.base import BaseModel
 from models.mixins import TimestampMixin
 from models.repository.player.class_ import ClassRepositoryModel
 from models.repository.player.race import RaceRepositoryModel
@@ -18,6 +18,10 @@ class PlayerConfigurationModel(BaseModel):
     Конфигурационная модель игрока.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор игрока",
+        default_factory=uuid.uuid4,
+    )
     username: str = Field(
         description="Ник пользователя в игре",
         default="NoName",
@@ -32,7 +36,7 @@ class PlayerConfigurationModel(BaseModel):
     )
 
 
-class PlayerRepositoryModel(TimestampMixin):
+class PlayerRepositoryModel(BaseModel, TimestampMixin):
     """
     Репозиторий игрока.
     """
@@ -52,6 +56,10 @@ class CharacterConfigurationModel(BaseModel):
     Конфигурационная модель персонажа.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор персонажа",
+        default_factory=uuid.uuid4,
+    )
     game_name: str = Field(
         description="Ник пользователя в игре",
         default="NoName",
@@ -90,7 +98,7 @@ class CharacterConfigurationModel(BaseModel):
     )
 
 
-class CharacterBaseModel:
+class CharacterBaseModel(BaseModel):
     """
     Базовая модель персонажа.
     """
@@ -106,7 +114,7 @@ class CharacterBaseModel:
     )
 
 
-class CharacterRepositoryModel(TimestampMixin):
+class CharacterRepositoryModel(CharacterBaseModel, TimestampMixin):
     """
     Репозиторий персонажа.
     """

@@ -5,9 +5,9 @@
 import uuid
 from typing import Any
 
+from pydantic import BaseModel
 from pydantic import Field
 
-from models.base import BaseModel
 from models.constants.race import RaceType
 from models.mixins import ExtraEffectsMixin
 from models.mixins import TimestampMixin
@@ -19,6 +19,10 @@ class RaceConfigurationModel(BaseModel):
     Конфигурационная модель рассы.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор расы",
+        default_factory=uuid.uuid4,
+    )
     race: RaceType = Field(
         description="Тип расы персонажа",
         default=RaceType.human,
@@ -29,7 +33,7 @@ class RaceConfigurationModel(BaseModel):
     )
 
 
-class RaceBaseModel:
+class RaceBaseModel(BaseModel):
     """
     Базовая модель расы.
     """

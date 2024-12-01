@@ -4,9 +4,9 @@
 
 import uuid
 
+from pydantic import BaseModel
 from pydantic import Field
 
-from models.base import BaseModel
 from models.constants.skill import SkillType
 from models.mixins import TimestampMixin
 from models.repository.extra_effects import EffectBaseModel
@@ -17,6 +17,10 @@ class SkillConfigurationModel(BaseModel):
     Конфигурационная модель скилла.
     """
 
+    uid: uuid.UUID = Field(
+        description="Уникальный идентификатор скилла",
+        default_factory=uuid.uuid4,
+    )
     type: SkillType = Field(
         description="Тип скилла",
         default=SkillType.active,
@@ -43,7 +47,7 @@ class SkillConfigurationModel(BaseModel):
     )
 
 
-class SkillBaseModel:
+class SkillBaseModel(BaseModel):
     """
     Базовая модель скилла.
     """

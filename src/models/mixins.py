@@ -4,6 +4,7 @@
 
 from datetime import datetime
 
+from pydantic import BaseModel
 from pydantic import Field
 
 from models.repository.extra_effects import BuffsBaseModel
@@ -26,7 +27,7 @@ class TimestampMixin:
     )
 
 
-class ExtraEffectsMixin:
+class ExtraEffectsMixin(BaseModel):
     """
     Миксин для эффектов, бафов и дебафов
     """

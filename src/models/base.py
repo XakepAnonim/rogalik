@@ -3,8 +3,6 @@
 которые могут использоваться для валидации и сериализации входящих и исходящих сообщений через SocketIO.
 """
 
-import uuid
-
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import ValidationError
@@ -83,14 +81,3 @@ class NoResponseModel(BaseResponseActionDataModel):
     """
     Модель для действий, которые не возвращают ответ.
     """
-
-
-class BaseModel(BaseModel):
-    """
-    Base model for all models.
-    """
-
-    uid: uuid.UUID = Field(
-        description="Unique identifier for the model",
-        default_factory=uuid.uuid4,
-    )

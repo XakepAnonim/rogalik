@@ -20,5 +20,5 @@ class PlayerLoginModel(BaseModel):
     Модель входа в игру.
     """
 
-    username: str
+    email: str
     password: str
