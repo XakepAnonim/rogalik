@@ -6,6 +6,7 @@ import secrets
 from pathlib import Path
 
 from pydantic import Field
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
 
@@ -85,10 +86,7 @@ class Settings(BaseSettings):
         description="Пароль пользователя базы данных",
         default="postgres",
     )
-    sqlalchemy_url: str = Field(
-        description="Строка с параметрами подключения к базе данных",
-        default=f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}",
-    )
+    sqlalchemy_url: str | None = None
 
     # Redis settings
     redis_host: str = Field(
@@ -115,6 +113,14 @@ class Settings(BaseSettings):
         description="Используется ли редис кластер",
         default=False,
     )
+
+    @model_validator(mode="after")
+    def set_sqlalchemy_url(self) -> "Settings":
+        """
+        Преобразование sqlalchemy_url в формат, подходящий для sqlalchemy.
+        """
+        self.sqlalchemy_url = f"postgresql+asyncpg://{self.db_user}:{self.db_password}@{self.db_host}/{self.db_name}"
+        return self
 
 
 settings = Settings()
